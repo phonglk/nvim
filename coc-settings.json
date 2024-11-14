@@ -1,0 +1,8 @@
+{
+  "Lua.format.defaultConfig": {
+    "indent_size": 2,
+    "tab_width": 2,
+  },
+  "Lua.diagnostics.globals": ["vim"],
+  "suggest.noselect": false,
+}

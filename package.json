@@ -1,0 +1,12 @@
+{
+  "name": "nvim",
+  "version": "1.0.0",
+  "description": "nvim configuration",
+  "main": "index.js",
+  "repository": "https://github.com/phonglk/nvim.git",
+  "author": "Phong Le <phongle@canva.com>",
+  "license": "MIT",
+  "dependencies": {
+    "prettier": "^3.3.3"
+  }
+}
