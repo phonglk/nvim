@@ -5,4 +5,7 @@
   },
   "Lua.diagnostics.globals": ["vim"],
   "suggest.noselect": false,
+  "diagnostic.enable": true,
+  "diagnostic.virtualText": true,
+  "diagnostic.virtualTextCurrentLineOnly": false
 }

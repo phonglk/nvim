@@ -9,10 +9,6 @@ vim.opt.ignorecase = true     -- Case insensitive search
 vim.opt.smartcase = true      -- But case sensitive when uppercase present
 vim.opt.hlsearch = false      -- Don't highlight search results
 vim.opt.wrap = false          -- Don't wrap lines
-vim.opt.breakindent = true    -- Maintain indent when wrapping indented lines
-vim.opt.tabstop = 2           -- Number of spaces tabs count for
-vim.opt.shiftwidth = 2        -- Size of an indent
-vim.opt.expandtab = true      -- Use spaces instead of tabs
 vim.opt.termguicolors = true  -- True color support
 vim.opt.cursorline = true     -- highlight the current line
 vim.opt.signcolumn = "yes"    -- always show signcolumn
@@ -20,6 +16,15 @@ vim.opt.scrolloff = 8
 vim.opt.incsearch = true      -- highlight search term incrementally
 vim.opt.grepprg = "rg --vimgrep"
 vim.opt.grepformat = "%f:%l:%c:%m"
+
+-- Indentation settings
+vim.opt.tabstop = 2           -- Number of spaces tabs count for
+vim.opt.shiftwidth = 2        -- Size of an indent
+vim.opt.expandtab = true      -- Use spaces instead of tabs
+vim.opt.smartindent = true    -- Enable smart indenting
+vim.opt.autoindent = true     -- Copy indent from current line when starting a new line
+vim.opt.breakindent = true    -- Maintain indent when wrapping lines
+vim.opt.preserveindent = true -- Preserve indent structure when reindenting
 
 
 -- Package manager setup (lazy.nvim)
@@ -31,6 +36,27 @@ if not vim.loop.fs_stat(lazypath) then
   })
 end
 vim.opt.rtp:prepend(lazypath)
+
+local function get_git_root()
+  local handle = io.popen("git rev-parse --show-toplevel 2>/dev/null")
+  if handle then
+    local result = handle:read("*l")
+    handle:close()
+    return result
+  end
+end
+
+local git_root = get_git_root()
+if git_root then
+  local dprint_dir = git_root .. "/tools/dprint"
+  if vim.fn.isdirectory(dprint_dir) == 1 then
+    vim.g.dprint_dir = dprint_dir
+    vim.g.dprint_format_on_save = 1 
+    vim.g.dprint_system_command = 'Dispatch'
+    vim.g.dprint_debug = 0
+  end
+end
+
 
 -- Plugin specifications
 require("lazy").setup({ -- Theme
@@ -46,7 +72,7 @@ require("lazy").setup({ -- Theme
       "MunifTanjim/nui.nvim"
     },
     config = function()
-      vim.keymap.set('n', '<leader>t', ':Neotree toggle<cr>')
+      vim.keymap.set('n', '<leader>t', ':Neotree toggle<cr>', { desc= 'Toggle tree' })
       vim.keymap.set('n', '<leader>T', ':Neotree reveal<cr>')
     end
   }, -- Treesitter
@@ -63,6 +89,13 @@ require("lazy").setup({ -- Theme
     'neoclide/coc.nvim',
     branch = 'release',
     config = function() require('plugins.coc') end
+  },
+  {
+    "sourcegraph/sg.nvim",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    -- If you have a recent version of lazy.nvim, you don't need to add this!
+    build = "nvim -l build/init.lua",
+    config = function() require("sg").setup() end
   },
   {
     "ibhagwan/fzf-lua",
@@ -104,7 +137,6 @@ require("lazy").setup({ -- Theme
     dependencies = { 'nvim-tree/nvim-web-devicons' },
     config = function() require('plugins.lualine') end
   },
-  'cohama/lexima.vim',         -- Autopair
   'rhysd/conflict-marker.vim', -- "highlight conflicts
   "github/copilot.vim",
   {
@@ -113,29 +145,63 @@ require("lazy").setup({ -- Theme
     config = function() require('plugins.comment') end
   },
   {
+    "folke/which-key.nvim",
+    dependencies = { 'echasnovski/mini.icons' },
+    event = "VeryLazy",
+    config = function() require('phong.whichkey') end,
+  },
+  {
     'j-hui/fidget.nvim',
     config = function() require('fidget').setup() end
   },
-  'lukas-reineke/indent-blankline.nvim', -- " Show horizontal back line
-    -- Git
-  "tpope/vim-fugitive", -- !git with improvement
-  "tpope/vim-rhubarb",  -- hub in github
+  {
+    'lukas-reineke/indent-blankline.nvim', -- " Show horizontal back line
+    main = "ibl",
+    ---@module "ibl"
+    ---@type ibl.config
+    opts = {},
+    config = function()
+      require('ibl').setup()
+    end
+  },
+  -- Git
+  "tpope/vim-fugitive",                  -- !git with improvement
+  "tpope/vim-rhubarb",                   -- hub in github
   "tpope/vim-dispatch",
+  {
+    url = "org-2562356@github.com:Canva/dprint-vim-plugin.git",
+    lazy = false,
+  }
+
+  -- {
+  --   "ldelossa/gh.nvim",
+  --   dependencies = {
+  --     {
+  --       "ldelossa/litee.nvim",
+  --       config = function()
+  --         require("litee.lib").setup()
+  --       end,
+  --     },
+  --   },
+  --   config = function()
+  --     require("litee.gh").setup()
+  --   end,
+  -- }
+
 })
 
--- Function for showing documentation
-function _G.show_docs()
-  local cw = vim.fn.expand('<cword>')
-  if vim.fn.index({ 'vim', 'help' }, vim.bo.filetype) >= 0 then
-    vim.api.nvim_command('h ' .. cw)
-  elseif vim.api.nvim_eval('coc#rpc#ready()') then
-    vim.fn.CocActionAsync('doHover')
-  else
-    vim.api.nvim_command('!' .. vim.o.keywordprg .. ' ' .. cw)
-  end
-end
+
 
 -- Set colorscheme
 vim.cmd [[colorscheme ofirkai-darkblue]]
+
+-- Add reload config command
+vim.api.nvim_create_user_command('ReloadVimConfig', function()
+  vim.cmd('source $MYVIMRC')
+  vim.notify('Neovim config reloaded!', vim.log.levels.INFO)
+end, { desc = 'Reload Neovim configuration' })
+
 require('phong.keymaps')
 require('phong.term')
+require('phong.checkoutpr')
+require('phong.pathutil')
